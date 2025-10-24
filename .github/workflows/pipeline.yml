@@ -6,7 +6,7 @@ on:
       - main
   pull_request:
     branches: [main]
-    types: [opened, synchronize, closed]
+    types: [opened, synchronize]
 
 jobs:
   simple_deployment_pipeline:
@@ -40,7 +40,9 @@ jobs:
   build:
     needs: [deploy_to_render]
     runs-on: ubuntu-latest
-    if: ${{ github.event.pull_request.merged == true }}
+    if: |
+      ${{ github.event_name == 'push' ||
+       (github.event_name == 'pull_request' && github.event.pull_request.merged == true) }}
     permissions:
       contents: write
     steps:
