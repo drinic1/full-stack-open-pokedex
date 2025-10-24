@@ -23,6 +23,7 @@ jobs:
       - run: npm run build
       - run: npm run test
   deploy_to_render:
+    needs: [simple_deployment_pipeline]
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'push' }}
     steps:
@@ -36,3 +37,22 @@ jobs:
           apiKey: ${{ secrets.RENDER_API_KEY }}
           node-version: lts/Jod #optional
           cli-version: 2.2.0 #optional
+  build:
+    needs: [deploy_to_render]
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: "0"
+
+      - name: Bump version and push tag
+        uses: anothrNick/github-tag-action@1.75.0 # Don't use @master or @v1 unless you're happy to test the latest version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # if you don't want to set write permissions use a PAT token
+          DEFAULT_BUMP: patch
+          TAG_PREFIX: v
+          PRERELEASE: true
