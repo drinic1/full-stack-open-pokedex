@@ -14,7 +14,7 @@ env:
 jobs:
   simple_deployment_pipeline:
     outputs:
-      skip_rest: $ {{ steps.final_step.outcome == 'success' }}
+      skip_rest: ${{ steps.final_step.outcome == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
