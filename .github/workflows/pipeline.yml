@@ -8,8 +8,13 @@ on:
     branches: [main]
     types: [opened, synchronize]
 
+env:
+  SKIPPABLE: ${{ github.event.commits && contains(join(github.event.commits.*.message, ' '), '#skip') }}
+
 jobs:
   simple_deployment_pipeline:
+    outputs:
+      skip_rest: $ {{ steps.final_step.outcome == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,10 +27,14 @@ jobs:
         run: npm run eslint
       - run: npm run build
       - run: npm run test
+      - if: ${{ env.SKIPPABLE == 'true' }}
+        id: final_step
+        run: echo
+
   deploy_to_render:
     needs: [simple_deployment_pipeline]
+    if: ${{ github.event_name == 'push' && needs.simple_deployment_pipeline.outputs.skip_rest == 'false' }}
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'push' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@main #consider using pin for dependabot auto update
@@ -37,12 +46,14 @@ jobs:
           apiKey: ${{ secrets.RENDER_API_KEY }}
           node-version: lts/Jod #optional
           cli-version: 2.2.0 #optional
+
   build:
-    needs: [deploy_to_render]
+    needs: [simple_deployment_pipeline, deploy_to_render]
     runs-on: ubuntu-latest
     if: |
-      ${{ github.event_name == 'push' ||
-       (github.event_name == 'pull_request' && github.event.pull_request.merged == true) }}
+      ${{ (github.event_name == 'push' ||
+       (github.event_name == 'pull_request' && github.event.pull_request.merged == true))
+       && needs.simple_deployment_pipeline.outputs.skip_rest == 'false' }}
     permissions:
       contents: write
     steps:
