@@ -22,3 +22,17 @@ jobs:
         run: npm run eslint
       - run: npm run build
       - run: npm run test
+  deploy_to_render:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@main #consider using pin for dependabot auto update
+
+      - name: Create deployment
+        uses: sws2apps/render-deployment@main #consider using pin for dependabot auto update
+        with:
+          serviceId: ${{ secrets.RENDER_SERVICE_ID }}
+          apiKey: ${{ secrets.RENDER_API_KEY }}
+          node-version: lts/Jod #optional
+          cli-version: 2.2.0 #optional
