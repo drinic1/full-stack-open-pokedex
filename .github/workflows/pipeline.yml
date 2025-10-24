@@ -8,6 +8,9 @@ on:
     branches: [main]
     types: [opened, synchronize]
 
+env:
+  SKIPPABLE: ${{ github.event.commits && contains(join(github.event.commits.*.message, ' '), '#skip') }}
+
 jobs:
   simple_deployment_pipeline:
     runs-on: ubuntu-latest
@@ -25,7 +28,7 @@ jobs:
   deploy_to_render:
     needs: [simple_deployment_pipeline]
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'push' }}
+    if: ${{ github.event_name == 'push' && env.SKIPPABLE == 'false' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@main #consider using pin for dependabot auto update
@@ -41,8 +44,9 @@ jobs:
     needs: [deploy_to_render]
     runs-on: ubuntu-latest
     if: |
-      ${{ github.event_name == 'push' ||
-       (github.event_name == 'pull_request' && github.event.pull_request.merged == true) }}
+      ${{ (github.event_name == 'push' ||
+       (github.event_name == 'pull_request' && github.event.pull_request.merged == true))
+       && env.SKIPPABLE == 'false' }}
     permissions:
       contents: write
     steps:
