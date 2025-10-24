@@ -39,8 +39,8 @@ jobs:
           cli-version: 2.2.0 #optional
   build:
     needs: [deploy_to_render]
-    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+    if: ${{ github.event.pull_request.merged == true }}
     permissions:
       contents: write
     steps:
